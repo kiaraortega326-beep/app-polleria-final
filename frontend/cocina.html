@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pantalla de Cocina</title>
+    <script src="https://tailwindcss.com"></script>
+    <script src="https://socket.io"></script>
+</head>
+<body class="bg-gray-900 text-white p-4">
+    <h1 class="text-xl font-bold text-center border-b border-gray-700 pb-2 mb-4">👨‍🍳 Comandas Recibidas (En Vivo)</h1>
+    <div id="lista-pedidos" class="grid grid-cols-1 gap-4"></div>
+
+    <script>
+        const API_URL = "AQUÍ_VA_TU_ENLACE_DE_RENDER_BACKEND"; // Se cambia en la fase 5
+        const socket = io(API_URL);
+        const sonido = new Audio('https://mixkit.co'); // Sonido campana público
+
+        socket.on('nuevo_pedido_cocina', (pedido) => {
+            sonido.play().catch(e => console.log("Se requiere interacción previa"));
+            const lista = document.getElementById('lista-pedidos');
+            lista.innerHTML = `
+                <div class="bg-amber-500 text-black p-4 rounded-lg shadow-lg font-bold animate-pulse">
+                    <p class="text-lg">Cliente: ${pedido.cliente_nombre} (${pedido.celular})</p>
+                    <p class="text-sm">Pago asignado: ${pedido.medio_pago.toUpperCase()}</p>
+                    <p class="text-right text-xl">S/ ${pedido.total}</p>
+                </div>` + lista.innerHTML;
+        });
+    </script>
+</body>
+</html>

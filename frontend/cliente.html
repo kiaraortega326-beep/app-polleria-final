@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrasaDigital - Pedidos</title>
+    <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
+        <h1 class="text-2xl font-bold text-red-600 text-center mb-4">🍗 BrasaDigital Norte</h1>
+        <div id="carta" class="space-y-4 mb-6"></div>
+        
+        <h2 class="text-lg font-bold mb-2">Tus Datos</h2>
+        <input id="nombre" type="text" placeholder="Tu Nombre" class="w-full border p-2 rounded mb-2">
+        <input id="celular" type="text" placeholder="Celular" class="w-full border p-2 rounded mb-4">
+        
+        <button onclick="enviarPedido()" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700">
+            Confirmar Pedido (S/ <span id="total-pago">24.90</span>)
+        </button>
+    </div>
+
+    <script>
+        const API_URL = "AQUÍ_VA_TU_ENLACE_DE_RENDER_BACKEND"; // Se cambia en la fase 5
+        
+        async function cargarCarta() {
+            const res = await fetch(`${API_URL}/api/productos`);
+            const productos = await res.json();
+            const cartaDiv = document.getElementById('carta');
+            cartaDiv.innerHTML = '';
+            productos.forEach(p => {
+                cartaDiv.innerHTML += `
+                    <div class="border p-3 rounded flex justify-between items-center bg-gray-50">
+                        <div>
+                            <p class="font-semibold">${p.nombre}</p>
+                            <p class="text-sm text-gray-500">Stock: ${p.cantidad_disponible} unds.</p>
+                        </div>
+                        <p class="font-bold text-red-600">S/ ${p.precio}</p>
+                    </div>`;
+            });
+        }
+        
+        async function enviarPedido() {
+            const pedido = {
+                cliente_nombre: document.getElementById('nombre').value,
+                celular: document.getElementById('celular').value,
+                tipo_atencion: "recojo",
+                medio_pago: "yape",
+                total: 24.90 // Estático para la prueba rápida
+            };
+            await fetch(`${API_URL}/api/pedidos`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(pedido)
+            });
+            alert("¡Pedido enviado con éxito!");
+        }
+        cargarCarta();
+    </script>
+</body>
+</html>
