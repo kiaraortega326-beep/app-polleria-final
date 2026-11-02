@@ -1,61 +1,179 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BrasaDigital - Pedidos</title>
-    <script src="https://tailwindcss.com"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-4">
+
+<body class="bg-gray-100 min-h-screen p-4">
+
     <div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
-        <h1 class="text-2xl font-bold text-red-600 text-center mb-4">🍗 BrasaDigital Norte</h1>
-        <div id="carta" class="space-y-4 mb-6"></div>
-        
-        <h2 class="text-lg font-bold mb-2">Tus Datos</h2>
-        <input id="nombre" type="text" placeholder="Tu Nombre" class="w-full border p-2 rounded mb-2">
-        <input id="celular" type="text" placeholder="Celular" class="w-full border p-2 rounded mb-4">
-        
-        <button onclick="enviarPedido()" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700">
+
+        <h1 class="text-2xl font-bold text-red-600 text-center mb-6">
+            🍗 BrasaDigital Norte
+        </h1>
+
+        <!-- Productos -->
+        <div id="carta" class="space-y-4 mb-6">
+            <p class="text-gray-500 text-center">
+                Cargando productos...
+            </p>
+        </div>
+
+        <!-- Datos del cliente -->
+        <h2 class="text-lg font-bold mb-3">Tus Datos</h2>
+
+        <input
+            id="nombre"
+            type="text"
+            placeholder="Tu Nombre"
+            class="w-full border p-3 rounded mb-3"
+        >
+
+        <input
+            id="celular"
+            type="tel"
+            placeholder="Celular"
+            class="w-full border p-3 rounded mb-4"
+        >
+
+        <!-- Botón -->
+        <button
+            id="btnPedido"
+            onclick="enviarPedido()"
+            class="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700"
+        >
             Confirmar Pedido (S/ <span id="total-pago">24.90</span>)
         </button>
+
+        <p id="mensaje" class="text-center mt-4 text-sm"></p>
+
     </div>
 
     <script>
-        const API_URL = "https://backend-polleria.onrender.com"; // Se cambia en la fase 5
-        
+        const API_URL = "https://backend-polleria.onrender.com";
+
         async function cargarCarta() {
-            const res = await fetch(`${API_URL}/api/productos`);
-            const productos = await res.json();
             const cartaDiv = document.getElementById('carta');
-            cartaDiv.innerHTML = '';
-            productos.forEach(p => {
-                cartaDiv.innerHTML += `
-                    <div class="border p-3 rounded flex justify-between items-center bg-gray-50">
-                        <div>
-                            <p class="font-semibold">${p.nombre}</p>
-                            <p class="text-sm text-gray-500">Stock: ${p.cantidad_disponible} unds.</p>
-                        </div>
-                        <p class="font-bold text-red-600">S/ ${p.precio}</p>
-                    </div>`;
-            });
+
+            try {
+                const res = await fetch(`${API_URL}/api/productos`);
+
+                if (!res.ok) {
+                    throw new Error("No se pudieron cargar los productos");
+                }
+
+                const productos = await res.json();
+
+                cartaDiv.innerHTML = '';
+
+                productos.forEach(p => {
+                    const disponible = p.disponible === true;
+
+                    const productoDiv = document.createElement('div');
+
+                    productoDiv.className =
+                        "border p-4 rounded-lg flex justify-between items-center bg-gray-50";
+
+                    const info = document.createElement('div');
+
+                    const nombre = document.createElement('p');
+                    nombre.className = "font-semibold";
+                    nombre.textContent = p.nombre;
+
+                    const stock = document.createElement('p');
+                    stock.className = "text-sm text-gray-500";
+                    stock.textContent = disponible
+                        ? "Disponible"
+                        : "Agotado";
+
+                    const precio = document.createElement('p');
+                    precio.className = "font-bold text-red-600";
+                    precio.textContent = `S/ ${Number(p.precio).toFixed(2)}`;
+
+                    info.appendChild(nombre);
+                    info.appendChild(stock);
+
+                    productoDiv.appendChild(info);
+                    productoDiv.appendChild(precio);
+
+                    cartaDiv.appendChild(productoDiv);
+                });
+
+                if (productos.length === 0) {
+                    cartaDiv.textContent = "No hay productos registrados.";
+                }
+
+            } catch (error) {
+                console.error("Error al cargar productos:", error);
+                cartaDiv.innerHTML =
+                    '<p class="text-red-600 text-center">Error al cargar productos.</p>';
+            }
         }
-        
+
         async function enviarPedido() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const celular = document.getElementById('celular').value.trim();
+            const mensaje = document.getElementById('mensaje');
+            const boton = document.getElementById('btnPedido');
+
+            if (!nombre || !celular) {
+                mensaje.textContent = "Completa tu nombre y celular.";
+                mensaje.className = "text-center mt-4 text-sm text-red-600";
+                return;
+            }
+
             const pedido = {
-                cliente_nombre: document.getElementById('nombre').value,
-                celular: document.getElementById('celular').value,
+                cliente_nombre: nombre,
+                celular: celular,
                 tipo_atencion: "recojo",
                 medio_pago: "yape",
-                total: 24.90 // Estático para la prueba rápida
+                total: 24.90
             };
-            await fetch(`${API_URL}/api/pedidos`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(pedido)
-            });
-            alert("¡Pedido enviado con éxito!");
+
+            try {
+                boton.disabled = true;
+                boton.textContent = "Enviando pedido...";
+
+                const res = await fetch(`${API_URL}/api/pedidos`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(pedido)
+                });
+
+                const resultado = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(resultado.error || "No se pudo registrar el pedido");
+                }
+
+                mensaje.textContent = "¡Pedido registrado correctamente!";
+                mensaje.className = "text-center mt-4 text-sm text-green-600";
+
+                alert("¡Tu pedido fue enviado a la cocina!");
+
+            } catch (error) {
+                console.error("Error al enviar pedido:", error);
+
+                mensaje.textContent = "No se pudo enviar el pedido: " + error.message;
+                mensaje.className = "text-center mt-4 text-sm text-red-600";
+
+            } finally {
+                boton.disabled = false;
+                boton.innerHTML =
+                    'Confirmar Pedido (S/ <span id="total-pago">24.90</span>)';
+            }
         }
+
         cargarCarta();
     </script>
+
 </body>
 </html>
